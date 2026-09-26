@@ -40,7 +40,7 @@ Under your Railway service -> **Variables** tab, add the following:
 | `QDRANT_COLLECTION` | `cgtmse_knowledge_base` |
 | `EMBEDDING_PROVIDER` | `builtin` |
 | `EMBEDDING_DIMENSION` | `384` |
-| `CORS_ORIGINS` | `*` |
+| `CORS_ORIGINS` | `http://localhost:5173,https://cgtmse-69w5.vercel.app,*` |
 | `RATE_LIMIT_PER_MINUTE` | `60` |
 
 ### Step 4: Generate Domain

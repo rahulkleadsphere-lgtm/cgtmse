@@ -86,7 +86,7 @@ explicit_origins = [o for o in raw_origins if o != "*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=explicit_origins if not has_wildcard else [],
+    allow_origins=explicit_origins,
     allow_origin_regex=r"^https?://.*" if has_wildcard else None,
     allow_credentials=True,
     allow_methods=["*"],
