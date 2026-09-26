@@ -45,8 +45,8 @@ Under your Railway service -> **Variables** tab, add the following:
 
 ### Step 4: Generate Domain
 1. In Railway service -> **Settings** -> **Public Networking**, click **Generate Domain**.
-2. Note your Railway public URL (e.g. `https://cgtmse-backend-production.up.railway.app`).
-3. Verify it by visiting: `https://your-backend.up.railway.app/health`.
+2. Note your Railway public URL: `https://cgtmse-production.up.railway.app`.
+3. Verify it by visiting: `https://cgtmse-production.up.railway.app/health`.
 
 ---
 
@@ -69,9 +69,7 @@ In Vercel -> **Environment Variables**, add:
 
 | Variable Name | Value |
 | :--- | :--- |
-| `VITE_N8N_WEBHOOK_URL` | `https://your-backend.up.railway.app/webhook/websiteflow` |
-
-*(Replace `your-backend.up.railway.app` with the actual Railway public domain generated in Part 1)*
+| `VITE_N8N_WEBHOOK_URL` | `https://cgtmse-production.up.railway.app/webhook/websiteflow` |
 
 ### Step 3: Deploy
 1. Click **Deploy**.
@@ -82,7 +80,7 @@ In Vercel -> **Environment Variables**, add:
 
 ## Part 3: Verification Checklist
 
-- [ ] `GET https://your-backend.up.railway.app/health` returns status `healthy`
-- [ ] `POST https://your-backend.up.railway.app/webhook/websiteflow` returns SSE token streaming
+- [ ] `GET https://cgtmse-production.up.railway.app/health` returns status `healthy`
+- [ ] `POST https://cgtmse-production.up.railway.app/webhook/websiteflow` returns SSE token streaming
 - [ ] Vercel app loads with theme toggle, suggestions, and real-time streaming
 - [ ] Input exceeding 4,000 characters displays the red context warning banner
