@@ -1,0 +1,25 @@
+# Python virtual environment
+venv/
+env/
+.venv/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Caches and logs
+.pytest_cache/
+*.log
+.coverage
+htmlcov/
+
+# Temporary and local data
+data/uploads/*
+!data/uploads/.gitkeep

@@ -1,0 +1,14 @@
+venv/
+env/
+.venv/
+.env
+.env.local
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.log
+.git
+.gitignore
+README.md
+data/uploads/*
+!data/uploads/.gitkeep
