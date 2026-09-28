@@ -68,6 +68,17 @@ export function useChat() {
     setIsLoading(false);
   }, []);
 
+  // Ensure an active conversation always exists on mount
+  useEffect(() => {
+    if (conversations.length === 0) {
+      const newConv = createNewConversation();
+      setConversations([newConv]);
+      setActiveConvId(newConv.id);
+    } else if (!activeConvId || !conversations.some(c => c.id === activeConvId)) {
+      setActiveConvId(conversations[0].id);
+    }
+  }, [conversations, activeConvId, setConversations, setActiveConvId]);
+
   // Send a message with real-time token streaming
   const sendMessage = useCallback(async (content) => {
     if (!content || !content.trim() || isLoading) {
@@ -81,12 +92,10 @@ export function useChat() {
       return;
     }
 
-    // Ensure we have an active conversation
+    // Ensure we have a valid conversation to send to
     let currentConv = activeConversation;
     if (!currentConv) {
       currentConv = createNewConversation();
-      setConversations(prev => [currentConv, ...prev]);
-      setActiveConvId(currentConv.id);
     }
 
     const targetConvId = currentConv.id;
@@ -116,17 +125,21 @@ export function useChat() {
     const updatedMessagesWithUser = [...currentConv.messages, userMessage, assistantMessage];
     const now = new Date().toISOString();
 
-    setConversations(prev => prev.map(c => {
-      if (c.id === targetConvId) {
-        return {
-          ...c,
-          title: conversationTitle,
-          updatedAt: now,
-          messages: updatedMessagesWithUser
-        };
+    const updatedConv = {
+      ...currentConv,
+      title: conversationTitle,
+      updatedAt: now,
+      messages: updatedMessagesWithUser
+    };
+
+    setConversations(prev => {
+      const exists = prev.some(c => c.id === targetConvId);
+      if (exists) {
+        return prev.map(c => c.id === targetConvId ? updatedConv : c);
       }
-      return c;
-    }));
+      return [updatedConv, ...prev];
+    });
+    setActiveConvId(targetConvId);
 
     setIsLoading(true);
     setError(null);

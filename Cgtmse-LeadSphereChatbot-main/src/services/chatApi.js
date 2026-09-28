@@ -79,6 +79,40 @@ export async function sendChatMessageStream({
   onError,
   signal
 }) {
+  const trimmed = message.trim();
+  const cleanQuery = trimmed.replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase().trim();
+  const isGreeting = /^(hi|hello|hey|good\s+(morning|afternoon|evening)|hi\s+there|namaste|greetings)$/i.test(cleanQuery);
+
+  if (isGreeting) {
+    const greetingAnswer = "Hello! I'm CGTMSE virtual assistant. How can I help you today with your CGTMSE-related questions?";
+    const suggestions = [
+      "What is the maximum guarantee coverage limit?",
+      "Who is eligible for CGTMSE credit guarantee?",
+      "What are the annual guarantee fee (AGF) rates?",
+      "How does an MLI submit claims in GMS?"
+    ];
+    // Stream greeting tokens smoothly
+    const words = greetingAnswer.split(' ');
+    for (let i = 0; i < words.length; i++) {
+      const delta = (i === 0 ? '' : ' ') + words[i];
+      if (onToken) onToken(delta);
+      await new Promise(r => setTimeout(r, 22));
+    }
+    if (onDone) onDone({ suggestions, full_answer: greetingAnswer, sessionId });
+    return {
+      answer: greetingAnswer,
+      sources: [],
+      suggestions,
+      sessionId
+    };
+  }
+
+  // Refine query for the live backend to return concise, short bullet responses
+  let backendMessage = trimmed;
+  if (!backendMessage.toLowerCase().includes('concise') && !backendMessage.toLowerCase().includes('short')) {
+    backendMessage += ' (Please provide a concise, direct answer in 2-3 short bullet points without unnecessary length.)';
+  }
+
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
   if (!webhookUrl || webhookUrl.trim() === '' || webhookUrl.includes('YOUR-N8N-DOMAIN')) {
@@ -105,7 +139,7 @@ export async function sendChatMessageStream({
         "Accept": "text/event-stream"
       },
       body: JSON.stringify({
-        message: message.trim(),
+        message: backendMessage,
         sessionId,
         language: "en",
         client: "web",

@@ -1,53 +1,41 @@
-import React, { useEffect } from 'react';
-import AppLayout from './components/layout/AppLayout';
-import ChatView from './components/chat/ChatView';
+import React, { useState } from 'react';
+import GmsPortalPage from './components/portal/GmsPortalPage';
+import AwsChatWidget from './components/chatbot/AwsChatWidget';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useChat } from './hooks/useChat';
 
 export default function App() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   const {
-    conversations,
     activeConversation,
-    activeConvId,
     isLoading,
     sendMessage,
     retryLastMessage,
     abortRequest,
-    startNewChat,
-    selectConversation,
-    deleteConversation
+    startNewChat
   } = useChat();
-
-  // Keyboard shortcut: Cmd+N or Ctrl+N / Ctrl+K for new chat
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
-        e.preventDefault();
-        startNewChat();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [startNewChat]);
 
   return (
     <ErrorBoundary>
-      <AppLayout
-        conversations={conversations}
-        activeConvId={activeConvId}
-        activeConversation={activeConversation}
-        onSelectConversation={selectConversation}
-        onDeleteConversation={deleteConversation}
-        onNewChat={startNewChat}
-      >
-        <ChatView
+      <div className="relative min-h-screen w-full bg-[#f8f9fa] text-slate-800">
+        
+        {/* Main Single Page: CGTMSE GMS Portal Login Clone */}
+        <GmsPortalPage onOpenChat={() => setIsChatOpen(true)} />
+
+        {/* Floating AWS-Style Chat Widget at Bottom-Right */}
+        <AwsChatWidget
           conversation={activeConversation}
           isLoading={isLoading}
           onSendMessage={sendMessage}
           onRetry={retryLastMessage}
           onAbortRequest={abortRequest}
+          onNewChat={startNewChat}
+          isOpen={isChatOpen}
+          setIsOpen={setIsChatOpen}
         />
-      </AppLayout>
+
+      </div>
     </ErrorBoundary>
   );
 }
