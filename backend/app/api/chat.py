@@ -5,6 +5,7 @@ from app.models.schemas import ChatRequest, ChatResponse
 from app.services.qdrant_service import qdrant_service
 from app.services.groq_service import groq_service
 from app.services.session_service import session_manager
+from app.services.auth_guard import verify_chat_auth
 
 router = APIRouter(tags=["Chat & RAG"])
 
@@ -25,6 +26,9 @@ async def webhook_endpoint(request: Request, body: ChatRequest):
     return await process_chat(request, body)
 
 async def process_chat(request: Request, body: ChatRequest):
+    # Enforce authentication token to prevent unauthorized cURL / Postman access
+    verify_chat_auth(request)
+
     user_query = body.message.strip()
     session_id = body.sessionId
 

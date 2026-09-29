@@ -1,3 +1,5 @@
+import { authService } from './authService';
+
 /**
  * Normalizes varied n8n / AI Agent JSON responses into a consistent contract.
  * Backend might respond with .answer, .output, .response, .message, or direct string.
@@ -132,12 +134,18 @@ export async function sendChatMessageStream({
     : timeoutController.signal;
 
   try {
+    const token = authService.getAuthToken();
+    const reqHeaders = {
+      "Content-Type": "application/json",
+      "Accept": "text/event-stream"
+    };
+    if (token) {
+      reqHeaders["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream"
-      },
+      headers: reqHeaders,
       body: JSON.stringify({
         message: backendMessage,
         sessionId,

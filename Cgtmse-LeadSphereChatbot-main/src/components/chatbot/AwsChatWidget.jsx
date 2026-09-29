@@ -15,8 +15,15 @@ import {
   X,
   MessageSquare,
   ShieldAlert,
-  Info
+  Info,
+  Lock,
+  Unlock,
+  LogIn,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import AuthLoginModal from './AuthLoginModal';
 
 export default function AwsChatWidget({
   conversation,
@@ -36,6 +43,12 @@ export default function AwsChatWidget({
   const [copiedId, setCopiedId] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Authentication State
+  const { currentUser, isAuthenticated, logout } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState('');
+  const [authToast, setAuthToast] = useState(null);
 
   const messages = conversation?.messages || [];
   const hasMessages = messages.length > 0;
@@ -60,8 +73,32 @@ export default function AwsChatWidget({
   const handleSend = (text) => {
     const query = (typeof text === 'string' ? text : inputVal).trim();
     if (!query || isLoading) return;
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setPendingQuery(query);
+      setShowAuthModal(true);
+      setInputVal('');
+      return;
+    }
+
     onSendMessage(query);
     setInputVal('');
+  };
+
+  const handleAuthSuccess = (user) => {
+    setShowAuthModal(false);
+    setAuthToast('Authentication successful! Access granted to CGTMSE Assist.');
+    setTimeout(() => setAuthToast(null), 4000);
+
+    // If there was a pending query asked by user before login, send it now
+    if (pendingQuery) {
+      const queryToRun = pendingQuery;
+      setPendingQuery('');
+      setTimeout(() => {
+        onSendMessage(queryToRun);
+      }, 350);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -100,11 +137,11 @@ export default function AwsChatWidget({
       {/* ======================================================== */}
       {/* FLOATING LAUNCHER & NOTIFICATION (AWS REFERENCE)        */}
       {/* ======================================================== */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end">
         
         {/* Notification Speech Banner (Screenshot 3) */}
         {!isOpen && showNotification && (
-          <div className="mb-3 max-w-[340px] sm:max-w-[380px] bg-[#1e293b] text-white p-3.5 pr-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-start gap-3 animate-fade-in text-xs leading-relaxed select-none">
+          <div className="mb-3 max-w-[calc(100vw-32px)] sm:max-w-[380px] bg-[#1e293b] text-white p-3 sm:p-3.5 pr-2.5 sm:pr-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-start gap-2.5 sm:gap-3 animate-fade-in text-xs leading-relaxed select-none">
             <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0 mt-0.5">
               <MessageSquare className="w-3.5 h-3.5" />
             </div>
@@ -166,7 +203,7 @@ export default function AwsChatWidget({
       {/* AWS-STYLE CHAT WINDOW                                    */}
       {/* ======================================================== */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[380px] sm:w-[400px] max-w-[calc(100vw-32px)] h-[580px] sm:h-[620px] max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden animate-scale-up font-sans">
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-6 z-50 w-full sm:w-[400px] h-[100dvh] sm:h-[620px] sm:max-h-[calc(100vh-120px)] bg-white sm:rounded-2xl shadow-2xl border-0 sm:border sm:border-slate-200/90 flex flex-col overflow-hidden animate-scale-up font-sans">
           
           {/* ---------------------------------------------------- */}
           {/* HEADER (Toggle: Welcome Header vs In-Chat Header)     */}
@@ -184,13 +221,37 @@ export default function AwsChatWidget({
                     built-in
                   </span>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-white/80 hover:text-white p-1 rounded-md transition"
-                  aria-label="Minimize"
-                >
-                  <Minus className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {isAuthenticated ? (
+                    <button
+                      onClick={() => logout()}
+                      title="Account Verified. Click to sign out."
+                      className="flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-medium bg-emerald-500/30 border border-emerald-300/40 rounded-full text-emerald-100 hover:bg-emerald-500/50 transition backdrop-blur-sm"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                      <span>Verified</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setPendingQuery('');
+                        setShowAuthModal(true);
+                      }}
+                      title="Click to sign in with authorized account"
+                      className="flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium bg-white/20 hover:bg-white/30 border border-white/40 rounded-full text-white transition active:scale-95 shadow-sm backdrop-blur-sm"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="text-white/80 hover:text-white p-1 rounded-md transition"
+                    aria-label="Minimize"
+                  >
+                    <Minus className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Subtitle */}
@@ -214,7 +275,28 @@ export default function AwsChatWidget({
 
                   {/* Dropdown Menu */}
                   {showMenu && (
-                    <div className="absolute top-8 left-0 z-20 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-xs text-slate-700 animate-fade-in">
+                    <div className="absolute top-8 left-0 z-20 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-xs text-slate-700 animate-fade-in">
+                      {isAuthenticated ? (
+                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/70">
+                          <p className="text-[10px] text-slate-400 font-medium">Account Status:</p>
+                          <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>Authorized Account</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setShowAuthModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-blue-50 text-blue-700 flex items-center gap-2 font-semibold border-b border-slate-100"
+                        >
+                          <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Sign In to Chat</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => {
                           if (onNewChat) onNewChat();
@@ -248,6 +330,22 @@ export default function AwsChatWidget({
                         <Info className="w-3.5 h-3.5 text-slate-500" />
                         <span>Disclaimer & Terms</span>
                       </button>
+
+                      {isAuthenticated && (
+                        <>
+                          <div className="border-t border-slate-100 my-1" />
+                          <button
+                            onClick={() => {
+                              logout();
+                              setShowMenu(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-red-50 text-red-600 flex items-center gap-2 font-medium"
+                          >
+                            <LogOut className="w-3.5 h-3.5 text-red-500" />
+                            <span>Sign Out</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -260,16 +358,33 @@ export default function AwsChatWidget({
                   <span className="px-2 py-0.5 text-[10px] font-medium text-slate-600 rounded-full border border-slate-300 bg-slate-50">
                     built-in
                   </span>
+                  {isAuthenticated && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" title="Authenticated" />
+                  )}
                 </div>
 
-                {/* Right: Minimize */}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-100 transition"
-                  aria-label="Minimize"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
+                {/* Right: Minimize & Auth pill */}
+                <div className="flex items-center gap-1.5">
+                  {!isAuthenticated && (
+                    <button
+                      onClick={() => {
+                        setPendingQuery('');
+                        setShowAuthModal(true);
+                      }}
+                      className="px-2 py-0.5 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full transition flex items-center gap-1"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-1 text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-100 transition"
+                    aria-label="Minimize"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Multi-color Rainbow Gradient Line (AWS style) */}
@@ -287,12 +402,31 @@ export default function AwsChatWidget({
           {/* ---------------------------------------------------- */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
             
+            {/* Auth Notification Toast */}
+            {authToast && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2 text-xs animate-fade-in shadow-sm">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="font-medium">{authToast}</span>
+              </div>
+            )}
+
             {/* If NO messages: Welcome view with suggestions (Screenshot 2) */}
             {!hasMessages ? (
               <div className="pt-2 animate-fade-in">
-                <p className="text-xs font-semibold text-slate-800 mb-0.5">
-                  Want help getting started?
-                </p>
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-xs font-semibold text-slate-800">
+                    Want help getting started?
+                  </p>
+                  {!isAuthenticated && (
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-500 mb-3.5">
                   Tell us a little bit about what you're looking for.
                 </p>
@@ -488,7 +622,7 @@ export default function AwsChatWidget({
           {/* ---------------------------------------------------- */}
           {/* THE SINGLE BOTTOM CHAT INPUT AREA                    */}
           {/* ---------------------------------------------------- */}
-          <div className="p-3 border-t border-slate-100 bg-white flex-shrink-0">
+          <div className="p-3 border-t border-slate-100 bg-white flex-shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             
             {/* Input pill container */}
             <div className="relative flex items-center rounded-full border border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition shadow-sm bg-white">
@@ -500,7 +634,7 @@ export default function AwsChatWidget({
                 onKeyDown={handleKeyDown}
                 placeholder="Ask a question"
                 disabled={isLoading}
-                className="w-full h-10 pl-4 pr-11 text-xs text-slate-800 bg-transparent focus:outline-none placeholder:text-slate-400 font-normal disabled:opacity-50"
+                className="w-full h-11 sm:h-10 pl-4 pr-11 text-base sm:text-xs text-slate-800 bg-transparent focus:outline-none placeholder:text-slate-400 font-normal disabled:opacity-50"
               />
 
               {/* Stop generation button when streaming */}
@@ -589,6 +723,16 @@ export default function AwsChatWidget({
           </div>
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* AUTH LOGIN MODAL                                         */}
+      {/* ======================================================== */}
+      <AuthLoginModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        pendingQuery={pendingQuery}
+      />
 
     </>
   );
